@@ -2,11 +2,16 @@ document.getElementById("prediction-form").addEventListener("submit", async func
     event.preventDefault();
     
     const brand = document.getElementById("brand").value.trim();
-    const ram = document.getElementById("ram").value;
-    const storage = document.getElementById("storage").value;
-    const battery = document.getElementById("battery").value;
+    const ram = parseFloat(document.getElementById("ram").value);
+    const storage = parseFloat(document.getElementById("storage").value);
+    const battery = parseFloat(document.getElementById("battery").value);
 
-    // Show loading message
+    // Prevent negative or zero values
+    if (ram <= 0 || storage <= 0 || battery <= 0) {
+        alert("❌ Please enter valid positive values for RAM, Storage, and Battery.");
+        return;
+    }
+
     document.getElementById("result").innerHTML = `<h3>🔄 Predicting...</h3>`;
 
     try {
@@ -20,7 +25,7 @@ document.getElementById("prediction-form").addEventListener("submit", async func
         console.log("API Response:", data);
 
         if (data.predicted_price !== undefined) {
-            document.getElementById("result").innerHTML = `<h2>💰 Predicted Price: ₹${data.predicted_price}</h2>`;
+            document.getElementById("result").innerHTML = `<h2>💰 Predicted Price: ₹${Math.max(0, data.predicted_price)}</h2>`;
         } else {
             document.getElementById("result").innerHTML = `<h3 style="color: red;">⚠️ Error: ${data.error || "Unknown error"}</h3>`;
         }

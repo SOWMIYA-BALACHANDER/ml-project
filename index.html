@@ -4,25 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mobile Price Prediction</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="container">
         <h1>📱 Mobile Price Predictor</h1>
-        <p>Enter your mobile specifications to estimate the price.</p>
-
         <form id="prediction-form">
             <label for="brand">Brand:</label>
-            <input type="text" id="brand" name="brand" placeholder="e.g., Samsung, Apple" required>
+            <input type="text" id="brand" name="brand" placeholder="e.g., Samsung" required>
 
             <label for="ram">RAM (GB):</label>
-            <input type="number" id="ram" name="ram" placeholder="e.g., 8" required>
+            <input type="number" id="ram" name="ram" min="1" required>  <!-- Prevents negative & zero -->
 
             <label for="storage">Internal Storage (GB):</label>
-            <input type="number" id="storage" name="storage" placeholder="e.g., 128" required>
+            <input type="number" id="storage" name="storage" min="1" required> <!-- Prevents negative & zero -->
 
             <label for="battery">Battery (mAh):</label>
-            <input type="number" id="battery" name="battery" placeholder="e.g., 5000" required>
+            <input type="number" id="battery" name="battery" min="500" required> <!-- Minimum 500 mAh -->
 
             <button type="submit">🔍 Predict Price</button>
         </form>
@@ -30,6 +28,6 @@
         <div id="result" class="result"></div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="/script.js"></script>
 </body>
 </html>

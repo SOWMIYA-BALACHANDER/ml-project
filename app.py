@@ -1,60 +1,45 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_file, render_template
 import joblib
 import numpy as np
 import pandas as pd
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=".")
 
 # Load trained model, scaler, and label encoders
-try:
-    model = joblib.load("mobile_price_model.pkl")
-    scaler = joblib.load("scaler.pkl")
-    label_encoders = joblib.load("label_encoders.pkl")
-    print("✅ Model, scaler, and encoders loaded successfully!")
-except Exception as e:
-    print("❌ Error loading model files:", e)
-    model, scaler, label_encoders = None, None, None
+model = joblib.load("mobile_price_model.pkl")
+scaler = joblib.load("scaler.pkl")
+label_encoders = joblib.load("label_encoders.pkl")
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
+@app.route("/style.css")
+def serve_css():
+    return send_file("style.css", mimetype="text/css")
+
+@app.route("/script.js")
+def serve_js():
+    return send_file("script.js", mimetype="application/javascript")
+
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        if model is None or scaler is None or label_encoders is None:
-            return jsonify({"error": "Model files are missing. Check server logs."}), 500
-
         data = request.json
-        if not data:
-            return jsonify({"error": "Invalid input data"}), 400
-        
         brand = data.get("brand", "").strip().title()
-        ram = data.get("ram")
-        storage = data.get("storage")
-        battery = data.get("battery")
+        ram = float(data.get("ram", 0))
+        storage = float(data.get("storage", 0))
+        battery = float(data.get("battery", 0))
 
-        # Validate input data
-        if not brand or ram is None or storage is None or battery is None:
-            return jsonify({"error": "Missing input values"}), 400
-
-        # Convert to float
-        try:
-            ram = float(ram)
-            storage = float(storage)
-            battery = float(battery)
-        except ValueError:
-            return jsonify({"error": "RAM, Storage, and Battery must be numbers"}), 400
+        # Prevent negative or zero values
+        if ram <= 0 or storage <= 0 or battery <= 0:
+            return jsonify({"error": "Invalid input. RAM, Storage, and Battery must be positive values."}), 400
 
         # Encode brand
         brand_encoder = label_encoders["Brand"]
-        if brand in brand_encoder.classes_:
-            brand_encoded = brand_encoder.transform([brand])[0]
-        else:
-            print(f"⚠️ Warning: Brand '{brand}' not found. Assigning default value 0.")
-            brand_encoded = 0
+        brand_encoded = brand_encoder.transform([brand])[0] if brand in brand_encoder.classes_ else 0
 
-        # Prepare input as DataFrame
+        # Prepare input
         user_input = pd.DataFrame([[brand_encoded, ram, storage, battery]], 
                                   columns=["Brand me", "RAM", "ROM", "Battery_Power"])
 
@@ -62,12 +47,10 @@ def predict():
         user_input_scaled = scaler.transform(user_input)
 
         # Predict price
-        predicted_price = model.predict(user_input_scaled)[0]
-        print(f"✅ Predicted Price: ₹{predicted_price}")
+        predicted_price = max(0, model.predict(user_input_scaled)[0])  # Prevent negative output
         return jsonify({"predicted_price": round(predicted_price, 2)})
 
     except Exception as e:
-        print("❌ Error during prediction:", str(e))
         return jsonify({"error": "Prediction failed", "details": str(e)}), 500
 
 if __name__ == "__main__":
